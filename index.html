@@ -3,30 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <title>Монитор статусов</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-top: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .buttons button {
+      margin: 5px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+
+    .blue { background: #3498db; }
+    .brown { background: #8e5a3c; }
+    .green { background: #2ecc71; }
+    .gray { background: #7f8c8d; }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    small {
+      color: #666;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Мой профиль</h2>
-<div id="myInfo"></div>
+<div class="card">
+  <h2>Мой профиль</h2>
+  <div id="myInfo">Загрузка...</div>
 
-<button onclick="changeStatus('Учусь', 'blue')">Учусь</button>
-<button onclick="changeStatus('Кофе', 'brown')">Кофе</button>
-<button onclick="changeStatus('В игре', 'green')">В игре</button>
-<button onclick="changeStatus('Дома', 'gray')">Дома</button>
+  <div class="buttons">
+    <button class="blue" onclick="changeStatus('Учусь', 'blue')">Учусь</button>
+    <button class="brown" onclick="changeStatus('Кофе', 'brown')">Кофе</button>
+    <button class="green" onclick="changeStatus('В игре', 'green')">В игре</button>
+    <button class="gray" onclick="changeStatus('Дома', 'gray')">Дома</button>
+  </div>
+</div>
 
-<h2>Монитор группы</h2>
-<div id="grouplist"></div>
+<div class="card">
+  <h2>Монитор группы</h2>
+  <div id="grouplist">Загрузка...</div>
+</div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// 🔴 ВСТАВЬ СВОИ ДАННЫЕ
+// ✅ ТВОИ ДАННЫЕ (у тебя уже вставлены правильно)
 const URL = 'https://fxizqmbaadnpzabrpvra.supabase.co';
 const KEY = 'sb_publishable_lvVH1QsN5oTesoxu-VwLoQ_8hEMTNwx';
 
 const supabase = createClient(URL, KEY);
 
-// 🔴 ВСТАВЬ СВОЙ ID
+// ✅ ТВОЙ ID
 const MY_ID = '3ab268d2-c6b5-43f9-97f6-6ce1897fcf70';
 
 // смена статуса
@@ -51,13 +111,16 @@ async function fetchGroup() {
     .select('*')
     .order('username', { ascending: true });
 
-  if (error) return console.error(error);
+  if (error) {
+    console.error(error);
+    return;
+  }
 
   const list = document.getElementById('grouplist');
 
   list.innerHTML = data.map(user => `
-    <div style="display:flex; gap:10px; margin:5px;">
-      <div style="width:10px; height:10px; border-radius:50%; background:${user.color || '#ccc'}"></div>
+    <div class="user-item">
+      <div class="status-dot" style="background:${user.color || '#ccc'}"></div>
       <div>
         <strong>${user.username}</strong><br>
         <small>${user.status || 'Статус не задан'}</small>

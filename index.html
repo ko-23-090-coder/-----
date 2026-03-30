@@ -11,9 +11,7 @@
       padding: 20px;
     }
 
-    h2 {
-      margin-top: 30px;
-    }
+    h2 { margin-top: 30px; }
 
     .card {
       background: white;
@@ -23,7 +21,13 @@
       margin-bottom: 20px;
     }
 
-    .buttons button {
+    .auth-buttons {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .buttons button, .auth-buttons button {
       margin: 5px;
       padding: 8px 12px;
       border: none;
@@ -33,10 +37,12 @@
       font-weight: bold;
     }
 
-    .blue { background: #3498db; }
-    .brown { background: #8e5a3c; }
-    .green { background: #2ecc71; }
-    .gray { background: #7f8c8d; }
+    .blue   { background: #3498db; }
+    .brown  { background: #8e5a3c; }
+    .green  { background: #2ecc71; }
+    .gray   { background: #7f8c8d; }
+    .red    { background: #e74c3c; }
+    .google { background: #4285F4; }
 
     .user-item {
       display: flex;
@@ -52,72 +58,131 @@
       border-radius: 50%;
     }
 
-    small {
-      color: #666;
-    }
+    small { color: #666; }
   </style>
 </head>
 
 <body>
 
+<!-- Авторизация -->
 <div class="card">
-  <h2>Мой профиль</h2>
-  <div id="myInfo">Загрузка...</div>
+  <h2>Авторизация</h2>
+  <div class="auth-buttons">
+    <button class="google" onclick="login()">🔐 Войти через Google</button>
+    <button class="red"    onclick="logout()">Выйти</button>
+  </div>
+  <div id="authInfo">Вы не вошли</div>
+</div>
 
+<!-- Мой профиль -->
+<div class="card">
+  <h2>Мой статус</h2>
+  <div id="myInfo">—</div>
   <div class="buttons">
-    <button class="blue" onclick="changeStatus('Учусь', 'blue')">Учусь</button>
+    <button class="blue"  onclick="changeStatus('Учусь', 'blue')">Учусь</button>
     <button class="brown" onclick="changeStatus('Кофе', 'brown')">Кофе</button>
     <button class="green" onclick="changeStatus('В игре', 'green')">В игре</button>
-    <button class="gray" onclick="changeStatus('Дома', 'gray')">Дома</button>
+    <button class="gray"  onclick="changeStatus('Дома', 'gray')">Дома</button>
   </div>
 </div>
 
+<!-- Группа -->
 <div class="card">
   <h2>Монитор группы</h2>
   <div id="grouplist">Загрузка...</div>
 </div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// ✅ ТВОИ ДАННЫЕ (у тебя уже вставлены правильно)
-const URL = 'https://fxizqmbaadnpzabrpvra.supabase.co';
-const KEY = 'sb_publishable_lvVH1QsN5oTesoxu-VwLoQ_8hEMTNwx';
+// 🔑 ТВОИ ДАННЫЕ — оставь как есть
+const SUPABASE_URL = 'https://fxizqmbaadnpzabrpvra.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_lvVH1QsN5oTesoxu-VwLoQ_8hEMTNwx';
 
-const supabase = createClient(URL, KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ✅ ТВОЙ ID
-const MY_ID = '3ab268d2-c6b5-43f9-97f6-6ce1897fcf70';
+let currentUser = null;
 
-// смена статуса
+// ─── Вход через Google ───────────────────────────────────────────
+window.login = async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href   // вернёт обратно на эту страницу
+    }
+  });
+  if (error) console.error('Login error:', error);
+};
+
+// ─── Выход ──────────────────────────────────────────────────────
+window.logout = async () => {
+  await supabase.auth.signOut();
+  location.reload();
+};
+
+// ─── Смена статуса ──────────────────────────────────────────────
 window.changeStatus = async (text, color) => {
+  if (!currentUser) {
+    alert('Сначала войдите через Google!');
+    return;
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ status: text, color: color })
-    .eq('id', MY_ID);
+    .eq('id', currentUser.id);
 
   if (error) {
-    alert("Ошибка! Проверь RLS политики");
+    alert('Ошибка! Проверь RLS политики');
     console.error(error);
   } else {
     fetchGroup();
   }
 };
 
-// загрузка пользователей
+// ─── Получить текущего пользователя ─────────────────────────────
+async function getUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  currentUser = user;
+
+  if (user) {
+    document.getElementById('authInfo').innerText = `Вошли как: ${user.email}`;
+  } else {
+    document.getElementById('authInfo').innerText = 'Вы не вошли';
+    document.getElementById('myInfo').innerText = '—';
+  }
+}
+
+// ─── Создать профиль если его нет ───────────────────────────────
+async function ensureProfile() {
+  if (!currentUser) return;
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (!data) {
+    await supabase.from('profiles').insert({
+      id: currentUser.id,
+      username: currentUser.email,
+      status: 'Новенький',
+      color: 'gray'
+    });
+  }
+}
+
+// ─── Загрузить группу ───────────────────────────────────────────
 async function fetchGroup() {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .order('username', { ascending: true });
 
-  if (error) {
-    console.error(error);
-    return;
-  }
+  if (error) { console.error(error); return; }
 
   const list = document.getElementById('grouplist');
-
   list.innerHTML = data.map(user => `
     <div class="user-item">
       <div class="status-dot" style="background:${user.color || '#ccc'}"></div>
@@ -128,19 +193,25 @@ async function fetchGroup() {
     </div>
   `).join('');
 
-  const me = data.find(u => u.id === MY_ID);
-
-  if (me) {
-    document.getElementById('myInfo').innerText =
-      `Вы зашли как: ${me.username}`;
+  if (currentUser) {
+    const me = data.find(u => u.id === currentUser.id);
+    if (me) {
+      document.getElementById('myInfo').innerText =
+        `${me.username} — ${me.status || 'статус не задан'}`;
+    }
   }
 }
 
-// автообновление
-fetchGroup();
+// ─── Запуск ─────────────────────────────────────────────────────
+async function init() {
+  await getUser();
+  await ensureProfile();
+  await fetchGroup();
+}
+
+init();
 setInterval(fetchGroup, 5000);
 
 </script>
-
 </body>
 </html>

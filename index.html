@@ -108,7 +108,7 @@ window.login = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.href   // вернёт обратно на эту страницу
+      redirectTo: 'https://ko-23-090-coder.github.io/-----/'
     }
   });
   if (error) console.error('Login error:', error);

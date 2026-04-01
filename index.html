@@ -2,288 +2,715 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Монитор статусов</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Монитор группы</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+ 
   <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d2e;
+      --card2: #222538;
+      --border: #2e3150;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --text: #e8eaf6;
+      --muted: #7b7fa3;
+      --online: #00d4aa;
+      --offline: #444;
+      --study: #6c63ff;
+      --coffee: #c07843;
+      --game: #2ecc71;
+      --home: #7b7fa3;
+    }
+ 
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
       padding: 20px;
     }
-
-    h2 { margin-top: 30px; }
-
-    .card {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+ 
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
-
-    .auth-buttons {
-      margin-bottom: 15px;
-      display: flex;
+ 
+    .app-title {
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      padding: 10px 0 4px;
+      letter-spacing: -0.5px;
+    }
+ 
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+ 
+    .card h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+ 
+    /* ── Auth ── */
+    #authInfo {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+ 
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+ 
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:active { transform: scale(.97); }
+ 
+    .btn-google  { background: #4285F4; color: #fff; }
+    .btn-logout  { background: #e74c3c; color: #fff; }
+    .btn-study   { background: var(--study); color: #fff; }
+    .btn-coffee  { background: var(--coffee); color: #fff; }
+    .btn-game    { background: var(--game); color: #fff; }
+    .btn-home    { background: var(--home); color: #fff; }
+    .btn-break   { background: #e67e22; color: #fff; }
+    .btn-end     { background: #c0392b; color: #fff; }
+    .btn-send    { background: var(--accent); color: #fff; padding: 10px 18px; }
+ 
+    /* ── My Status ── */
+    #myInfo {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+ 
+    /* ── Study Timer ── */
+    .timer-block {
+      background: var(--card2);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+ 
+    .timer-display {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+    }
+ 
+    .timer-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+ 
+    .total-time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+ 
+    /* ── Group Monitor ── */
+    .group-card { grid-column: 1 / -1; }
+ 
+    .online-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,212,170,.1);
+      border: 1px solid rgba(0,212,170,.3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: var(--accent2);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+ 
+    .online-dot-pulse {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: pulse 1.5s infinite;
+    }
+ 
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,.4); }
+      50%       { box-shadow: 0 0 0 5px rgba(0,212,170,0); }
+    }
+ 
+    .user-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 10px;
     }
-
-    .buttons button, .auth-buttons button {
-      margin: 5px;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      color: white;
-      font-weight: bold;
-    }
-
-    .blue   { background: #3498db; }
-    .brown  { background: #8e5a3c; }
-    .green  { background: #2ecc71; }
-    .gray   { background: #7f8c8d; }
-    .red    { background: #e74c3c; }
-    .google { background: #4285F4; }
-
-    .user-item {
+ 
+    .user-card {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
+      transition: border-color .2s;
     }
-
-    .status-dot {
-      width: 12px;
-      height: 12px;
+ 
+    .user-card.online-user {
+      border-color: rgba(0,212,170,.4);
+    }
+ 
+    .avatar {
+      width: 38px; height: 38px;
       border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      flex-shrink: 0;
+      position: relative;
     }
-
-    small { color: #666; }
+ 
+    .avatar-online-ring {
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 2px solid var(--accent2);
+      animation: pulse-ring 2s infinite;
+    }
+ 
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .4; }
+    }
+ 
+    .user-info { flex: 1; min-width: 0; }
+ 
+    .user-name {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+ 
+    .user-status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+ 
+    .user-timer {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+ 
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+ 
+    /* ── Chat ── */
+    .chat-card { grid-column: 1 / -1; }
+ 
+    .chat-messages {
+      height: 280px;
+      overflow-y: auto;
+      background: var(--card2);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+ 
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+ 
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+    }
+ 
+    .msg.mine { align-self: flex-end; align-items: flex-end; }
+    .msg.theirs { align-self: flex-start; }
+ 
+    .msg-name {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 3px;
+      font-weight: 700;
+    }
+ 
+    .msg-bubble {
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+ 
+    .msg.mine .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+ 
+    .msg.theirs .msg-bubble {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+ 
+    .msg-time {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+ 
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+    }
+ 
+    .chat-input {
+      flex: 1;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+ 
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--muted); }
+ 
+    .chat-empty {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin: auto;
+    }
+ 
+    @media (max-width: 600px) {
+      .app { grid-template-columns: 1fr; }
+      .group-card, .chat-card { grid-column: 1; }
+    }
   </style>
 </head>
-
 <body>
-
-<!-- Авторизация -->
-<div class="card">
-  <h2>Авторизация</h2>
-  <div class="auth-buttons">
-    <button class="google" onclick="login()">Войти через Google</button>
-    <button class="red"    onclick="logout()">Выйти</button>
+ 
+<div class="app">
+  <div class="app-title">📡 Монитор группы</div>
+ 
+  <!-- Auth -->
+  <div class="card">
+    <h3>Авторизация</h3>
+    <div id="authInfo">Вы не вошли</div>
+    <div class="btn-row">
+      <button class="btn btn-google" onclick="login()">🔐 Войти через Google</button>
+      <button class="btn btn-logout" onclick="logout()">Выйти</button>
+    </div>
   </div>
-  <div id="authInfo">Вы не вошли</div>
-</div>
-
-<!-- Мой профиль -->
-<div class="card">
-  <h2>Мой статус</h2>
-  <div id="myInfo">—</div>
-  <div class="buttons">
-    <button class="blue"  onclick="changeStatus('Учусь', 'blue')">Учусь</button>
-    <button class="brown" onclick="changeStatus('Кофе', 'brown')">Кофе</button>
-    <button class="green" onclick="changeStatus('В игре', 'green')">В игре</button>
-    <button class="gray"  onclick="changeStatus('Дома', 'gray')">Дома</button>
+ 
+  <!-- My Status -->
+  <div class="card">
+    <h3>Мой статус и таймер</h3>
+    <div id="myInfo">—</div>
+ 
+    <div class="timer-block">
+      <div class="timer-display" id="sessionTimer">00:00:00</div>
+      <div class="timer-label">Текущая сессия</div>
+      <div class="total-time" id="totalTime">Всего сегодня: —</div>
+    </div>
+ 
+    <div class="btn-row" style="margin-bottom:8px">
+      <button class="btn btn-study"  onclick="startStudy()">📚 Учиться</button>
+      <button class="btn btn-break"  onclick="takeBreak()">☕ Перерыв</button>
+      <button class="btn btn-end"    onclick="endSession()">⏹ Завершить</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-coffee" onclick="changeStatus('Кофе','coffee')">☕ Кофе</button>
+      <button class="btn btn-game"   onclick="changeStatus('В игре','game')">🎮 В игре</button>
+      <button class="btn btn-home"   onclick="changeStatus('Дома','home')">🏠 Дома</button>
+    </div>
+  </div>
+ 
+  <!-- Group Monitor -->
+  <div class="card group-card">
+    <h3>Монитор группы</h3>
+    <div class="online-count" id="onlineCount">
+      <div class="online-dot-pulse"></div>
+      <span>0 онлайн</span>
+    </div>
+    <div class="user-grid" id="grouplist">Загрузка...</div>
+  </div>
+ 
+  <!-- Chat -->
+  <div class="card chat-card">
+    <h3>💬 Общий чат</h3>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-empty">Загрузка чата...</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Сообщение..." 
+             onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="btn btn-send" onclick="sendMessage()">➤</button>
+    </div>
   </div>
 </div>
-
-<!-- Группа -->
-<div class="card">
-  <h2>Монитор группы</h2>
-  <div id="grouplist">Загрузка...</div>
-</div>
-
+ 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-// 🔑 ТВОИ ДАННЫЕ — оставь как есть
+ 
 const SUPABASE_URL = 'https://fxizqmbaadnpzabrpvra.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lvVH1QsN5oTesoxu-VwLoQ_8hEMTNwx';
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
+ 
 let currentUser = null;
-
-// ─── Вход через Google ───────────────────────────────────────────
+let sessionInterval = null;
+let sessionStart = null;
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 минуты = онлайн
+ 
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
 window.login = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: 'https://ko-23-090-coder.github.io/-----/'
-    }
+    options: { redirectTo: 'https://ko-23-090-coder.github.io/-----/' }
   });
-  if (error) console.error('Login error:', error);
+  if (error) console.error(error);
 };
-
-// ─── Выход ──────────────────────────────────────────────────────
+ 
 window.logout = async () => {
+  if (currentUser) await updateLastSeen();
   await supabase.auth.signOut();
   location.reload();
 };
-
-// ─── Смена статуса ──────────────────────────────────────────────
-window.changeStatus = async (text, color) => {
-  if (!currentUser) {
-    alert('Сначала войдите!');
-    return;
-  }
-
-  let updateData = {
-    status: text,
-    color: color
-  };
-
-  // ▶ НАЧАЛ УЧИТЬСЯ
-  if (text === 'Учусь') {
-  const { data } = await supabase
-    .from('profiles')
-    .select('study_start')
-    .eq('id', currentUser.id)
-    .single();
-
-  if (!data?.study_start) {
-    updateData.study_start = new Date().toISOString();
-  }
-} else {
-    // ▶ ВЫШЕЛ ИЗ УЧЕБЫ
-    const { data } = await supabase
-      .from('profiles')
-      .select('study_start, total_study_seconds')
-      .eq('id', currentUser.id)
-      .single();
-
-    if (data?.study_start) {
-      const seconds = Math.floor(
-        (new Date() - new Date(data.study_start)) / 1000
-      );
-
-      updateData.total_study_seconds =
-        (data.total_study_seconds || 0) + seconds;
-
-      updateData.study_start = null;
-    }
-  }
-
-  await supabase
-    .from('profiles')
-    .update(updateData)
-    .eq('id', currentUser.id);
-
-  fetchGroup();
-};
-
-// ─── Получить текущего пользователя ─────────────────────────────
+ 
 async function getUser() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
-
-  if (user) {
-    document.getElementById('authInfo').innerText = `Вошли как: ${user.email}`;
-  } else {
-    document.getElementById('authInfo').innerText = 'Вы не вошли';
-    document.getElementById('myInfo').innerText = '—';
-  }
+  document.getElementById('authInfo').innerText =
+    user ? `Вошли как: ${user.email}` : 'Вы не вошли';
 }
-
-// ─── Создать профиль если его нет ───────────────────────────────
+ 
+// ══════════════════════════════════════════
+//  PROFILE
+// ══════════════════════════════════════════
 async function ensureProfile() {
   if (!currentUser) return;
-
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', currentUser.id)
-    .single();
-
+  const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
   if (!data) {
     await supabase.from('profiles').insert({
       id: currentUser.id,
       username: currentUser.email,
       status: 'Новенький',
-      color: 'gray'
+      color: 'home',
+      total_study_seconds: 0
     });
   }
+  await updateLastSeen();
 }
-
-// ─── Загрузить группу ───────────────────────────────────────────
+ 
+async function updateLastSeen() {
+  if (!currentUser) return;
+  await supabase.from('profiles')
+    .update({ last_seen: new Date().toISOString() })
+    .eq('id', currentUser.id);
+}
+ 
+// ══════════════════════════════════════════
+//  STATUS CHANGE
+// ══════════════════════════════════════════
+window.changeStatus = async (text, color) => {
+  if (!currentUser) { alert('Сначала войдите!'); return; }
+  await supabase.from('profiles')
+    .update({ status: text, color, last_seen: new Date().toISOString() })
+    .eq('id', currentUser.id);
+  fetchGroup();
+};
+ 
+// ══════════════════════════════════════════
+//  STUDY TIMER
+// ══════════════════════════════════════════
+window.startStudy = async () => {
+  if (!currentUser) { alert('Сначала войдите!'); return; }
+  const now = new Date().toISOString();
+  await supabase.from('profiles')
+    .update({ status: 'Учусь', color: 'study', study_start: now, last_seen: now })
+    .eq('id', currentUser.id);
+  sessionStart = new Date();
+  startLocalTimer();
+  fetchGroup();
+};
+ 
+window.takeBreak = async () => {
+  if (!currentUser) return;
+  await saveStudySeconds();
+  await supabase.from('profiles')
+    .update({ status: 'Перерыв', color: 'coffee', study_start: null, last_seen: new Date().toISOString() })
+    .eq('id', currentUser.id);
+  clearInterval(sessionInterval);
+  sessionStart = null;
+  document.getElementById('sessionTimer').textContent = '00:00:00';
+  fetchGroup();
+};
+ 
+window.endSession = async () => {
+  if (!currentUser) return;
+  await saveStudySeconds();
+  await supabase.from('profiles')
+    .update({ status: 'Дома', color: 'home', study_start: null, last_seen: new Date().toISOString() })
+    .eq('id', currentUser.id);
+  clearInterval(sessionInterval);
+  sessionStart = null;
+  document.getElementById('sessionTimer').textContent = '00:00:00';
+  fetchGroup();
+};
+ 
+async function saveStudySeconds() {
+  if (!currentUser || !sessionStart) return;
+  const elapsed = Math.floor((Date.now() - sessionStart.getTime()) / 1000);
+  const { data } = await supabase.from('profiles').select('total_study_seconds').eq('id', currentUser.id).single();
+  const total = (data?.total_study_seconds || 0) + elapsed;
+  await supabase.from('profiles').update({ total_study_seconds: total }).eq('id', currentUser.id);
+}
+ 
+function startLocalTimer() {
+  clearInterval(sessionInterval);
+  sessionInterval = setInterval(() => {
+    if (!sessionStart) return;
+    const elapsed = Math.floor((Date.now() - sessionStart.getTime()) / 1000);
+    document.getElementById('sessionTimer').textContent = formatSeconds(elapsed);
+  }, 1000);
+}
+ 
+function formatSeconds(s) {
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const sec = String(s % 60).padStart(2, '0');
+  return `${h}:${m}:${sec}`;
+}
+ 
+// ══════════════════════════════════════════
+//  GROUP LIST
+// ══════════════════════════════════════════
+const COLOR_MAP = {
+  study:  { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: '📚 Учусь' },
+  coffee: { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: '☕ Кофе' },
+  game:   { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: '🎮 В игре' },
+  home:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: '🏠 Дома' },
+  gray:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: '🏠 Дома' },
+  blue:   { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: '📚 Учусь' },
+  brown:  { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: '☕ Кофе' },
+  green:  { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: '🎮 В игре' },
+};
+ 
+function isOnline(lastSeen) {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen).getTime()) < ONLINE_THRESHOLD_MS;
+}
+ 
 async function fetchGroup() {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('username', { ascending: true });
-
+  const { data, error } = await supabase.from('profiles').select('*').order('username', { ascending: true });
   if (error) { console.error(error); return; }
-
+ 
+  const now = Date.now();
+  let onlineCount = 0;
+ 
   const list = document.getElementById('grouplist');
-  const now = new Date();
   list.innerHTML = data.map(user => {
-  let total = user.total_study_seconds || 0;
-
-  if (user.study_start) {
-    total += Math.floor(
-      (now - new Date(user.study_start)) / 1000
-    );
-  }
-
-  return `
-    <div class="user-item">
-      <div class="status-dot" style="background:${user.color || '#ccc'}"></div>
-      <div>
-        <strong>${user.username}</strong><br>
-        <small>${user.status || 'Статус не задан'}</small><br>
-        <small>Учеба: ${formatTime(total)}</small>
+    const online = isOnline(user.last_seen);
+    if (online) onlineCount++;
+ 
+    const c = COLOR_MAP[user.color] || COLOR_MAP.home;
+    const initial = (user.username || '?')[0].toUpperCase();
+ 
+    // Live timer for studying users
+    let timerHtml = '';
+    if (user.study_start) {
+      const elapsed = Math.floor((now - new Date(user.study_start).getTime()) / 1000);
+      timerHtml = `<div class="user-timer">⏱ ${formatSeconds(elapsed)}</div>`;
+    } else if (user.total_study_seconds) {
+      timerHtml = `<div class="user-timer" style="color:var(--muted)">Всего: ${formatSeconds(user.total_study_seconds)}</div>`;
+    }
+ 
+    const name = user.username?.replace(/@.*/, '') || 'Без имени';
+ 
+    return `
+      <div class="user-card ${online ? 'online-user' : ''}">
+        <div class="avatar" style="background:${c.bg};color:${c.text}">
+          ${initial}
+          ${online ? '<div class="avatar-online-ring"></div>' : ''}
+        </div>
+        <div class="user-info">
+          <div class="user-name">${name}</div>
+          <div class="user-status">${user.status || '—'}</div>
+          ${timerHtml}
+        </div>
+        <span class="status-badge" style="background:${c.badge}22;color:${c.badge}">
+          ${online ? '🟢' : '⚫'}
+        </span>
       </div>
-    </div>
-  `;
-}).join('');
-
+    `;
+  }).join('');
+ 
+  document.getElementById('onlineCount').innerHTML =
+    `<div class="online-dot-pulse"></div><span>${onlineCount} онлайн</span>`;
+ 
+  // Update my total
   if (currentUser) {
     const me = data.find(u => u.id === currentUser.id);
     if (me) {
-      document.getElementById('myInfo').innerText =
-        `${me.username} — ${me.status || 'статус не задан'}`;
+      const name = me.username?.replace(/@.*/, '') || me.username;
+      document.getElementById('myInfo').textContent = `${name} — ${me.status || '—'}`;
+      document.getElementById('totalTime').textContent =
+        `Всего сегодня: ${formatSeconds(me.total_study_seconds || 0)}`;
+ 
+      // Resume timer if was studying
+      if (me.study_start && !sessionStart) {
+        sessionStart = new Date(me.study_start);
+        startLocalTimer();
+      }
     }
   }
 }
-function formatTime(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h}ч ${m}м ${s}с`;
+ 
+// ══════════════════════════════════════════
+//  CHAT
+// ══════════════════════════════════════════
+async function fetchMessages() {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .order('created_at', { ascending: true })
+    .limit(100);
+ 
+  if (error) { console.error(error); return; }
+ 
+  const box = document.getElementById('chatMessages');
+  const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+ 
+  if (data.length === 0) {
+    box.innerHTML = '<div class="chat-empty">Пока нет сообщений. Напиши первым! 👋</div>';
+    return;
+  }
+ 
+  box.innerHTML = data.map(msg => {
+    const mine = currentUser && msg.user_id === currentUser.id;
+    const name = msg.username?.replace(/@.*/, '') || 'Аноним';
+    const time = new Date(msg.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="msg ${mine ? 'mine' : 'theirs'}">
+        ${!mine ? `<div class="msg-name">${name}</div>` : ''}
+        <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+        <div class="msg-time">${time}</div>
+      </div>
+    `;
+  }).join('');
+ 
+  if (wasAtBottom) box.scrollTop = box.scrollHeight;
 }
-// ─── Запуск ─────────────────────────────────────────────────────
+ 
+window.sendMessage = async () => {
+  if (!currentUser) { alert('Сначала войдите!'); return; }
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+ 
+  const { data: profile } = await supabase
+    .from('profiles').select('username').eq('id', currentUser.id).single();
+ 
+  await supabase.from('messages').insert({
+    user_id: currentUser.id,
+    username: profile?.username || currentUser.email,
+    text
+  });
+ 
+  input.value = '';
+  await fetchMessages();
+  const box = document.getElementById('chatMessages');
+  box.scrollTop = box.scrollHeight;
+};
+ 
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+ 
+// Realtime chat subscription
+function subscribeChat() {
+  supabase.channel('messages').on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'messages' },
+    () => fetchMessages()
+  ).subscribe();
+}
+ 
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
 async function init() {
   await getUser();
   await ensureProfile();
   await fetchGroup();
-}
-
-init();
-setInterval(fetchGroup, 1000);
-
-  window.addEventListener('beforeunload', async () => {
-  if (!currentUser) return;
-
-  const { data } = await supabase
-    .from('profiles')
-    .select('study_start, total_study_seconds')
-    .eq('id', currentUser.id)
-    .single();
-
-  if (data?.study_start) {
-    const seconds = Math.floor(
-      (new Date() - new Date(data.study_start)) / 1000
-    );
-
-    await supabase
-      .from('profiles')
-      .update({
-        total_study_seconds:
-          (data.total_study_seconds || 0) + seconds,
-        study_start: null
-      })
-      .eq('id', currentUser.id);
+  await fetchMessages();
+  subscribeChat();
+ 
+  // Keep last_seen updated every 60s
+  if (currentUser) {
+    setInterval(updateLastSeen, 60000);
   }
-});
+ 
+  // Refresh group every 15s (for timers)
+  setInterval(fetchGroup, 15000);
+}
+ 
+init();
 </script>
 </body>
 </html>

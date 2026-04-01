@@ -413,7 +413,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 let sessionInterval = null;
 let sessionStart = null;
-const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 минуты = онлайн
+// Локальный кэш сообщений для оптимистичного рендера
+let localMessages = [];
+const ONLINE_THRESHOLD_MS = 3 * 60 * 1000; // 3 минуты = онлайн
  
 // ══════════════════════════════════════════
 //  AUTH
@@ -444,17 +446,24 @@ async function getUser() {
 // ══════════════════════════════════════════
 async function ensureProfile() {
   if (!currentUser) return;
-  const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+  const { data } = await supabase.from('profiles').select('id').eq('id', currentUser.id).single();
   if (!data) {
-    await supabase.from('profiles').insert({
+    const { error } = await supabase.from('profiles').insert({
       id: currentUser.id,
       username: currentUser.email,
       status: 'Новенький',
       color: 'home',
-      total_study_seconds: 0
+      total_study_seconds: 0,
+      last_seen: new Date().toISOString()
     });
+    if (error) console.error('insert profile:', error);
+  } else {
+    // Обновляем last_seen при каждом входе/загрузке
+    const { error } = await supabase.from('profiles')
+      .update({ last_seen: new Date().toISOString() })
+      .eq('id', currentUser.id);
+    if (error) console.error('last_seen update:', error);
   }
-  await updateLastSeen();
 }
  
 async function updateLastSeen() {
@@ -469,10 +478,11 @@ async function updateLastSeen() {
 // ══════════════════════════════════════════
 window.changeStatus = async (text, color) => {
   if (!currentUser) { alert('Сначала войдите!'); return; }
-  await supabase.from('profiles')
+  const { error } = await supabase.from('profiles')
     .update({ status: text, color, last_seen: new Date().toISOString() })
     .eq('id', currentUser.id);
-  fetchGroup();
+  if (error) { console.error('changeStatus error:', error); alert('Ошибка обновления статуса: ' + error.message); return; }
+  await fetchGroup();
 };
  
 // ══════════════════════════════════════════
@@ -631,30 +641,11 @@ async function fetchMessages() {
     .order('created_at', { ascending: true })
     .limit(100);
  
-  if (error) { console.error(error); return; }
+  if (error) { console.error('fetchMessages:', error); return; }
  
-  const box = document.getElementById('chatMessages');
-  const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
- 
-  if (data.length === 0) {
-    box.innerHTML = '<div class="chat-empty">Пока нет сообщений. Напиши первым! 👋</div>';
-    return;
-  }
- 
-  box.innerHTML = data.map(msg => {
-    const mine = currentUser && msg.user_id === currentUser.id;
-    const name = msg.username?.replace(/@.*/, '') || 'Аноним';
-    const time = new Date(msg.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-    return `
-      <div class="msg ${mine ? 'mine' : 'theirs'}">
-        ${!mine ? `<div class="msg-name">${name}</div>` : ''}
-        <div class="msg-bubble">${escapeHtml(msg.text)}</div>
-        <div class="msg-time">${time}</div>
-      </div>
-    `;
-  }).join('');
- 
-  if (wasAtBottom) box.scrollTop = box.scrollHeight;
+  // Заменяем локальный кэш реальными данными из БД
+  localMessages = data || [];
+  renderMessages();
 }
  
 window.sendMessage = async () => {
@@ -662,33 +653,79 @@ window.sendMessage = async () => {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if (!text) return;
+  input.value = '';
  
+  // 1) Оптимистично добавляем сообщение в локальный список сразу
+  const optimisticMsg = {
+    id: 'tmp-' + Date.now(),
+    user_id: currentUser.id,
+    username: currentUser.email,
+    text,
+    created_at: new Date().toISOString(),
+    _pending: true
+  };
+  localMessages.push(optimisticMsg);
+  renderMessages();
+ 
+  // 2) Отправляем в Supabase
   const { data: profile } = await supabase
     .from('profiles').select('username').eq('id', currentUser.id).single();
  
-  await supabase.from('messages').insert({
+  const { error } = await supabase.from('messages').insert({
     user_id: currentUser.id,
     username: profile?.username || currentUser.email,
     text
   });
  
-  input.value = '';
+  if (error) {
+    console.error('sendMessage error:', error);
+    // Убираем оптимистичное сообщение если ошибка
+    localMessages = localMessages.filter(m => m.id !== optimisticMsg.id);
+    renderMessages();
+    alert('Ошибка отправки: ' + error.message);
+    return;
+  }
+ 
+  // 3) Подгружаем реальные данные из БД
   await fetchMessages();
-  const box = document.getElementById('chatMessages');
-  box.scrollTop = box.scrollHeight;
 };
  
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
  
+function renderMessages() {
+  const box = document.getElementById('chatMessages');
+  const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+ 
+  if (localMessages.length === 0) {
+    box.innerHTML = '<div class="chat-empty">Пока нет сообщений. Напиши первым! 👋</div>';
+    return;
+  }
+ 
+  box.innerHTML = localMessages.map(msg => {
+    const mine = currentUser && msg.user_id === currentUser.id;
+    const name = (msg.username || 'Аноним').replace(/@.*/, '');
+    const time = new Date(msg.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+    const opacity = msg._pending ? 'opacity:0.6' : '';
+    return `
+      <div class="msg ${mine ? 'mine' : 'theirs'}" style="${opacity}">
+        ${!mine ? `<div class="msg-name">${name}</div>` : ''}
+        <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+        <div class="msg-time">${time}${msg._pending ? ' ⏳' : ''}</div>
+      </div>
+    `;
+  }).join('');
+ 
+  if (wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+ 
 // Realtime chat subscription
 function subscribeChat() {
-  supabase.channel('messages').on(
-    'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'messages' },
-    () => fetchMessages()
-  ).subscribe();
+  supabase.channel('chat-room')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+      () => fetchMessages()
+    ).subscribe();
 }
  
 // ══════════════════════════════════════════
@@ -701,13 +738,15 @@ async function init() {
   await fetchMessages();
   subscribeChat();
  
-  // Keep last_seen updated every 60s
   if (currentUser) {
+    // Обновляем last_seen каждые 60 сек
     setInterval(updateLastSeen, 60000);
   }
  
-  // Refresh group every 15s (for timers)
+  // Обновляем группу каждые 15 сек (для таймеров и онлайн)
   setInterval(fetchGroup, 15000);
+  // Чат polling каждые 5 сек (резервный, если Realtime не работает)
+  setInterval(fetchMessages, 5000);
 }
  
 init();

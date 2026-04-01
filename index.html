@@ -68,7 +68,7 @@
 <div class="card">
   <h2>Авторизация</h2>
   <div class="auth-buttons">
-    <button class="google" onclick="login()">🔐 Войти через Google</button>
+    <button class="google" onclick="login()">Войти через Google</button>
     <button class="red"    onclick="logout()">Выйти</button>
   </div>
   <div id="authInfo">Вы не вошли</div>
@@ -123,21 +123,52 @@ window.logout = async () => {
 // ─── Смена статуса ──────────────────────────────────────────────
 window.changeStatus = async (text, color) => {
   if (!currentUser) {
-    alert('Сначала войдите через Google!');
+    alert('Сначала войдите!');
     return;
   }
 
-  const { error } = await supabase
+  let updateData = {
+    status: text,
+    color: color
+  };
+
+  // ▶ НАЧАЛ УЧИТЬСЯ
+  if (text === 'Учусь') {
+  const { data } = await supabase
     .from('profiles')
-    .update({ status: text, color: color })
+    .select('study_start')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (!data?.study_start) {
+    updateData.study_start = new Date().toISOString();
+  }
+} else {
+    // ▶ ВЫШЕЛ ИЗ УЧЕБЫ
+    const { data } = await supabase
+      .from('profiles')
+      .select('study_start, total_study_seconds')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (data?.study_start) {
+      const seconds = Math.floor(
+        (new Date() - new Date(data.study_start)) / 1000
+      );
+
+      updateData.total_study_seconds =
+        (data.total_study_seconds || 0) + seconds;
+
+      updateData.study_start = null;
+    }
+  }
+
+  await supabase
+    .from('profiles')
+    .update(updateData)
     .eq('id', currentUser.id);
 
-  if (error) {
-    alert('Ошибка! Проверь RLS политики');
-    console.error(error);
-  } else {
-    fetchGroup();
-  }
+  fetchGroup();
 };
 
 // ─── Получить текущего пользователя ─────────────────────────────
@@ -183,15 +214,27 @@ async function fetchGroup() {
   if (error) { console.error(error); return; }
 
   const list = document.getElementById('grouplist');
-  list.innerHTML = data.map(user => `
+  const now = new Date();
+  list.innerHTML = data.map(user => {
+  let total = user.total_study_seconds || 0;
+
+  if (user.study_start) {
+    total += Math.floor(
+      (now - new Date(user.study_start)) / 1000
+    );
+  }
+
+  return `
     <div class="user-item">
       <div class="status-dot" style="background:${user.color || '#ccc'}"></div>
       <div>
         <strong>${user.username}</strong><br>
-        <small>${user.status || 'Статус не задан'}</small>
+        <small>${user.status || 'Статус не задан'}</small><br>
+        <small>Учеба: ${formatTime(total)}</small>
       </div>
     </div>
-  `).join('');
+  `;
+}).join('');
 
   if (currentUser) {
     const me = data.find(u => u.id === currentUser.id);
@@ -201,7 +244,12 @@ async function fetchGroup() {
     }
   }
 }
-
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h}ч ${m}м ${s}с`;
+}
 // ─── Запуск ─────────────────────────────────────────────────────
 async function init() {
   await getUser();
@@ -210,8 +258,32 @@ async function init() {
 }
 
 init();
-setInterval(fetchGroup, 5000);
+setInterval(fetchGroup, 1000);
 
+  window.addEventListener('beforeunload', async () => {
+  if (!currentUser) return;
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('study_start, total_study_seconds')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (data?.study_start) {
+    const seconds = Math.floor(
+      (new Date() - new Date(data.study_start)) / 1000
+    );
+
+    await supabase
+      .from('profiles')
+      .update({
+        total_study_seconds:
+          (data.total_study_seconds || 0) + seconds,
+        study_start: null
+      })
+      .eq('id', currentUser.id);
+  }
+});
 </script>
 </body>
 </html>

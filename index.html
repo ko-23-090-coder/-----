@@ -344,14 +344,14 @@
 <body>
  
 <div class="app">
-  <div class="app-title">📡 Монитор группы</div>
+  <div class="app-title">Монитор группы</div>
  
   <!-- Auth -->
   <div class="card">
     <h3>Авторизация</h3>
     <div id="authInfo">Вы не вошли</div>
     <div class="btn-row">
-      <button class="btn btn-google" onclick="login()">🔐 Войти через Google</button>
+      <button class="btn btn-google" onclick="login()">Войти через Google</button>
       <button class="btn btn-logout" onclick="logout()">Выйти</button>
     </div>
   </div>
@@ -368,14 +368,14 @@
     </div>
  
     <div class="btn-row" style="margin-bottom:8px">
-      <button class="btn btn-study"  onclick="startStudy()">📚 Учиться</button>
-      <button class="btn btn-break"  onclick="takeBreak()">☕ Перерыв</button>
-      <button class="btn btn-end"    onclick="endSession()">⏹ Завершить</button>
+      <button class="btn btn-study"  onclick="startStudy()">Учиться</button>
+      <button class="btn btn-break"  onclick="takeBreak()">Перерыв</button>
+      <button class="btn btn-end"    onclick="endSession()">Завершить</button>
     </div>
     <div class="btn-row">
-      <button class="btn btn-coffee" onclick="changeStatus('Кофе','coffee')">☕ Кофе</button>
-      <button class="btn btn-game"   onclick="changeStatus('В игре','game')">🎮 В игре</button>
-      <button class="btn btn-home"   onclick="changeStatus('Дома','home')">🏠 Дома</button>
+      <button class="btn btn-coffee" onclick="changeStatus('Кофе','coffee')">Кофе</button>
+      <button class="btn btn-game"   onclick="changeStatus('В игре','game')">В игре</button>
+      <button class="btn btn-home"   onclick="changeStatus('Дома','home')">Дома</button>
     </div>
   </div>
  
@@ -391,7 +391,7 @@
  
   <!-- Chat -->
   <div class="card chat-card">
-    <h3>💬 Общий чат</h3>
+    <h3>Общий чат</h3>
     <div class="chat-messages" id="chatMessages">
       <div class="chat-empty">Загрузка чата...</div>
     </div>
@@ -551,14 +551,14 @@ function formatSeconds(s) {
 //  GROUP LIST
 // ══════════════════════════════════════════
 const COLOR_MAP = {
-  study:  { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: '📚 Учусь' },
-  coffee: { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: '☕ Кофе' },
-  game:   { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: '🎮 В игре' },
-  home:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: '🏠 Дома' },
-  gray:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: '🏠 Дома' },
-  blue:   { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: '📚 Учусь' },
-  brown:  { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: '☕ Кофе' },
-  green:  { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: '🎮 В игре' },
+  study:  { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: 'Учусь' },
+  coffee: { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: 'Кофе' },
+  game:   { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: 'В игре' },
+  home:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: 'Дома' },
+  gray:   { bg: '#1a1d2e', text: '#94a3b8', badge: '#7b7fa3', label: 'Дома' },
+  blue:   { bg: '#1e1a3f', text: '#a78bfa', badge: '#6c63ff', label: 'Учусь' },
+  brown:  { bg: '#2a1f0f', text: '#d4a264', badge: '#c07843', label: 'Кофе' },
+  green:  { bg: '#0f2a1a', text: '#6ee7b7', badge: '#2ecc71', label: 'В игре' },
 };
  
 function isOnline(lastSeen) {
@@ -642,8 +642,7 @@ async function fetchMessages() {
     .limit(100);
  
   if (error) { console.error('fetchMessages:', error); return; }
- 
-  // Заменяем локальный кэш реальными данными из БД
+
   localMessages = data || [];
   renderMessages();
 }
@@ -699,7 +698,7 @@ function renderMessages() {
   const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
  
   if (localMessages.length === 0) {
-    box.innerHTML = '<div class="chat-empty">Пока нет сообщений. Напиши первым! 👋</div>';
+    box.innerHTML = '<div class="chat-empty">Пока нет сообщений. Напиши первым.</div>';
     return;
   }
  

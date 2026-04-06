@@ -457,7 +457,12 @@ window.showTab = (tab) => {
 window.login = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: {
+      redirectTo: window.location.href,
+      queryParams: {
+        prompt: 'select_account'  // ← всегда спрашивает аккаунт
+      }
+    }
   });
   if (error) console.error(error);
 };
@@ -478,21 +483,30 @@ async function getUser() {
 // ═══════════════════════════════════
 // PROFILE
 // ═══════════════════════════════════
-async function ensureProfile() {
-  if (!currentUser) return;
-  const { data } = await supabase.from('profiles').select('id').eq('id', currentUser.id).single();
-  if (!data) {
-    await supabase.from('profiles').insert({
-      id: currentUser.id,
-      username: currentUser.email,
-      status: 'Новенький',
-      color: 'home',
-      total_study_seconds: 0,
-      total_sessions: 0,
-      messages_count: 0,
-      achievements: [],
-      last_seen: new Date().toISOString()
-    });
+async function init() {
+  // Слушаем изменения сессии (вход/выход)
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    currentUser = session?.user || null;
+    document.getElementById('authInfo').innerText =
+      currentUser ? `Вошли как: ${currentUser.email}` : 'Вы не вошли';
+
+    if (currentUser) {
+      await ensureProfile();
+      await fetchGroup();
+      setInterval(updateLastSeen, 60000);
+    } else {
+      await fetchGroup();
+    }
+  });
+
+  await getUser();
+  await ensureProfile();
+  await fetchGroup();
+  await fetchMessages();
+  subscribeChat();
+  setInterval(fetchGroup, 15000);
+  setInterval(fetchMessages, 5000);
+}
   } else {
     await supabase.from('profiles')
       .update({ last_seen: new Date().toISOString() })

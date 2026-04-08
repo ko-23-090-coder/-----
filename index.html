@@ -109,7 +109,7 @@
       <div class="card-title">Авторизация</div>
       <div id="authInfo">Вы не вошли</div>
       <div class="btn-row">
-        <button class="btn btn-google" onclick="login()">🔐 Войти через Google</button>
+        <button class="btn btn-google" onclick="login()">Войти через Google</button>
         <button class="btn btn-logout" onclick="logout()">Выйти</button>
       </div>
     </div>
@@ -132,8 +132,22 @@
         <button class="btn btn-home"   onclick="changeStatus('Дома','home')">Дома</button>
       </div>
       <div class="my-badges" id="myBadges"></div>
-    </div>
-  </div>
+      
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+  <input 
+    id="customStatusInput" 
+    class="chat-input" 
+    placeholder="Свой статус..." 
+    maxlength="40"
+    style="flex:1;padding:8px 12px;font-size:13px"
+    onkeydown="if(event.key==='Enter') setCustomStatus()"
+  >
+  <button class="btn btn-send" onclick="setCustomStatus()" style="padding:8px 14px;font-size:12px">
+    Сохранить
+  </button>
+</div>
+</div>
+</div>
 
   <div class="card grid-full">
     <div class="card-title">Монитор группы</div>
@@ -286,6 +300,25 @@ function renderMyBadges() {
     return a ? `<span class="badge-mini ${a.rarity}">${a.icon} ${a.name}</span>` : '';
   }).join('');
 }
+
+window.setCustomStatus = async () => {
+  if (!currentUser) { alert('Сначала войдите!'); return; }
+  const input = document.getElementById('customStatusInput');
+  const text = input.value.trim();
+  if (!text) { alert('Введите текст статуса'); return; }
+  // Обновляем статус в Supabase
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      status: text, 
+      color: 'home',  // нейтральный цвет для кастомного статуса
+      last_seen: new Date().toISOString() 
+    })
+    .eq('id', currentUser.id);
+  if (error) { alert('Ошибка: ' + error.message); return; }
+  input.value = '';
+  fetchGroup(); // обновляем список участников
+};
 
 // ── STATUS ────────────────────────────────────────────────────────
 window.changeStatus = async (text, color) => {
@@ -447,6 +480,20 @@ window.sendMessage = async () => {
   await fetchMessages();
 };
 
+window.deleteMessage = async (msgId) => {
+  if (!currentUser) return;
+  // Удаляем из Supabase — .eq('user_id') защищает от удаления чужих
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', msgId)
+    .eq('user_id', currentUser.id);
+  if (error) { alert('Ошибка удаления: ' + error.message); return; }
+  // Убираем из локального списка сразу, без ожидания
+  localMessages = localMessages.filter(m => m.id !== msgId);
+  renderMessages();
+};
+
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function renderMessages() {
@@ -457,10 +504,14 @@ function renderMessages() {
     const mine = currentUser && msg.user_id === currentUser.id;
     const name = (msg.username||'Аноним').replace(/@.*/,'');
     const time = new Date(msg.created_at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+    // Кнопка удаления — только для своих сообщений
+    const deleteBtn = mine
+      ? `<button onclick="deleteMessage('${msg.id}')" style="background:none;border:none;cursor:pointer;color:#ff6b6b;font-size:11px;padding:0 4px;opacity:0.6" title="Удалить">✕</button>`
+      : '';
     return `<div class="msg ${mine?'mine':'theirs'}" style="${msg._pending?'opacity:.6':''}">
       ${!mine?`<div class="msg-name">${name}</div>`:''}
       <div class="msg-bubble">${escHtml(msg.text)}</div>
-      <div class="msg-time">${time}${msg._pending?' ⏳':''}</div>
+      <div class="msg-time">${time}${msg._pending?' ⏳':''}${deleteBtn}</div>
     </div>`;
   }).join('');
   if (atBottom) box.scrollTop = box.scrollHeight;
